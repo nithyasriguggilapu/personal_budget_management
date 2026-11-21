@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">YOUR PREFERENCES</p><h1>Settings</h1><p class="page-subtitle">How Pennywise stores and displays your budget.</p></div>
+</section>
+<section class="settings-grid">
+  <article class="panel settings-card">
+    <div class="settings-icon">₹</div>
+    <div><p class="eyebrow">DISPLAY</p><h2>Currency</h2><p>All amounts are shown in Indian Rupees (INR), formatted with two decimal places.</p><span class="setting-value">₹ Indian Rupee (INR)</span></div>
+  </article>
+  <article class="panel settings-card">
+    <div class="settings-icon storage-icon">▣</div>
+    <div><p class="eyebrow">DATA & PRIVACY</p><h2>Local storage</h2><p>Your transactions are saved in a SQLite database on this computer and remain available after restarting the app.</p><span class="setting-value">SQLite · instance/budget.db</span></div>
+  </article>
+  <article class="panel settings-note">
+    <span>✦</span><div><h2>Your data stays yours</h2><p>This student project runs locally. No account or external financial service is connected. Keep a backup of the database file if you want to preserve your records when moving computers.</p></div>
+  </article>
+</section>
+{% endblock %}

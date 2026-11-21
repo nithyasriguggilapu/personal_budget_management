@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">INSIGHTS THAT MOVE YOU FORWARD</p><h1>Your money, in perspective</h1><p class="page-subtitle">Understand your cash flow and spot spending patterns over time.</p></div>
+  <span class="report-badge">Updated live <i></i></span>
+</section>
+<section class="stats-grid report-stats">
+  <article class="stat-card stat-income"><div class="stat-top"><span class="stat-label">Total income</span><span class="stat-icon">↙</span></div><strong class="stat-value" data-summary="total_income">₹0.00</strong><span class="stat-note">All recorded income</span></article>
+  <article class="stat-card stat-expenses"><div class="stat-top"><span class="stat-label">Total expenses</span><span class="stat-icon">↗</span></div><strong class="stat-value" data-summary="total_expenses">₹0.00</strong><span class="stat-note">All recorded spending</span></article>
+  <article class="stat-card stat-balance"><div class="stat-top"><span class="stat-label">Remaining balance</span><span class="stat-icon">◉</span></div><strong class="stat-value" data-summary="balance">₹0.00</strong><span class="stat-note">Income minus expenses</span></article>
+</section>
+<section class="dashboard-grid report-charts">
+  <article class="panel chart-panel report-category-panel">
+    <div class="panel-heading"><div><p class="eyebrow">CATEGORY REPORT</p><h2>Expense by category</h2></div></div>
+    <div class="pie-area report-pie-area"><div class="chart-wrap pie-wrap"><canvas id="expense-chart" aria-label="Expenses by category pie chart"></canvas><div class="chart-empty" data-empty="expense-chart">No expenses yet</div></div><div class="category-legend" id="category-legend"></div></div>
+  </article>
+  <article class="panel chart-panel">
+    <div class="panel-heading"><div><p class="eyebrow">MONTHLY REPORT</p><h2>Income vs. expenses</h2></div><span class="chart-period">Last 12 months</span></div>
+    <div class="chart-wrap report-bar-wrap"><canvas id="cashflow-chart" aria-label="Monthly income and expense bar chart"></canvas><div class="chart-empty" data-empty="cashflow-chart">Your monthly activity will appear here</div></div>
+    <div class="chart-keys"><span><i class="key-income"></i>Income</span><span><i class="key-expenses"></i>Expenses</span></div>
+  </article>
+</section>
+<section class="panel category-report-panel">
+  <div class="panel-heading"><div><p class="eyebrow">SPENDING DETAILS</p><h2>Category-wise expense report</h2></div></div>
+  <div class="category-report-list" id="category-report-list"><div class="table-empty">Loading report…</div></div>
+</section>
+{% endblock %}

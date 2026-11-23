@@ -3,9 +3,12 @@ import sqlite3
 import tempfile
 import unittest
 from contextlib import closing
+from datetime import timedelta
 from pathlib import Path
+from unittest.mock import patch
 
-from app import create_app
+import database
+from app import _load_secret_key, create_app
 
 
 PASSWORD = "SecurePass123!"
@@ -84,7 +87,108 @@ class AppTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
 
 
+class SessionPersistenceTests(unittest.TestCase):
+    def test_income_and_session_work_across_app_instances(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database_path = str(Path(temp_dir) / "shared-budget.db")
+            app_config = {"TESTING": True, "DATABASE": database_path}
+            with patch.dict("os.environ", {"SECRET_KEY": ""}):
+                first_app = create_app(app_config)
+                second_app = create_app(app_config)
+
+            self.assertEqual(first_app.secret_key, second_app.secret_key)
+            first_client = first_app.test_client()
+            register_user(first_client)
+            self.assertEqual(login_user(first_client).status_code, 302)
+
+            csrf = csrf_token(first_client, "/")
+            session_cookie = first_client.get_cookie("session")
+            second_client = second_app.test_client()
+            second_client.set_cookie("session", session_cookie.value)
+
+            for path in ("/", "/transactions", "/reports", "/settings", "/"):
+                self.assertEqual(second_client.get(path).status_code, 200)
+
+            income = second_client.post(
+                "/api/income",
+                json={
+                    "amount": "1250.75",
+                    "source": "Consulting",
+                    "date": "2026-11-24",
+                },
+                headers={"X-CSRFToken": csrf},
+            )
+            self.assertEqual(income.status_code, 201)
+            self.assertEqual(income.get_json()["message"], "Income added successfully.")
+            self.assertEqual(
+                income.get_json()["transaction"]["description"], "Consulting"
+            )
+
+            expense = second_client.post(
+                "/api/expenses",
+                json={
+                    "amount": "50",
+                    "category": "Food",
+                    "description": "Lunch",
+                    "date": "2026-11-24",
+                },
+                headers={"X-CSRFToken": csrf_token(second_client, "/")},
+            )
+            self.assertEqual(expense.status_code, 201)
+            dashboard = second_client.get("/api/dashboard").get_json()
+            self.assertEqual(dashboard["summary"]["total_income"], 1250.75)
+            self.assertEqual(dashboard["summary"]["total_expenses"], 50)
+
+            user = database.fetch_user_by_identifier("testuser", database_path)
+            with closing(sqlite3.connect(database_path)) as connection:
+                saved_income = connection.execute(
+                    """
+                    SELECT type, amount_cents, user_id
+                    FROM transactions WHERE type = 'income'
+                    """
+                ).fetchone()
+            self.assertEqual(saved_income, ("income", 125075, user["id"]))
+
+            logout = second_client.post(
+                "/logout", data={"csrf_token": csrf_token(second_client, "/")}
+            )
+            self.assertEqual(logout.status_code, 302)
+            self.assertEqual(second_client.get("/").status_code, 302)
+            self.assertEqual(second_client.get("/api/dashboard").status_code, 401)
+
+            anonymous_client = second_app.test_client()
+            self.assertEqual(anonymous_client.get("/").status_code, 302)
+            self.assertEqual(anonymous_client.get("/api/dashboard").status_code, 401)
+
+    def test_persistent_secret_key_file_is_reused(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            key_path = Path(temp_dir) / "instance" / ".secret_key"
+            first_key = _load_secret_key(key_path)
+            second_key = _load_secret_key(key_path)
+            self.assertEqual(first_key, second_key)
+            self.assertEqual(len(first_key), 64)
+
+
 class AuthenticationTests(AppTestCase):
+    def test_remember_me_uses_configured_session_lifetime(self):
+        register_user(self.client)
+        response = self.client.post(
+            "/login",
+            data={
+                "csrf_token": csrf_token(self.client),
+                "identifier": "testuser",
+                "password": PASSWORD,
+                "remember_me": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        with self.client.session_transaction() as user_session:
+            self.assertTrue(user_session.permanent)
+        self.assertEqual(
+            self.app.permanent_session_lifetime, timedelta(days=30)
+        )
+        self.assertIsNotNone(self.client.get_cookie("session").expires)
+
     def test_registration_hashes_password_and_login_accepts_email_or_username(self):
         response = register_user(self.client)
         self.assertEqual(response.status_code, 302)

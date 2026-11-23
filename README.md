@@ -29,14 +29,15 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 Open [http://127.0.0.1:5000/](http://127.0.0.1:5000/) in your browser. Stop the local server with **Ctrl+C** in the terminal. The SQLite database is initialized automatically at `instance/budget.db` the first time the app runs.
 
-On local development runs without a configured `SECRET_KEY`, the app generates a temporary random key. This is suitable only for local testing; sessions will be invalidated when the app restarts.
+On local development runs without a configured `SECRET_KEY`, the app creates a random key in the ignored `instance/.secret_key` file and reuses it across restarts and workers. Keep this file private and do not delete it while active sessions should remain valid.
 
 ## Accounts and deployment
 
 - Register at `/register`, then log in at `/login`. Authenticated users are redirected to the budget dashboard.
 - Every dashboard, report, transaction, settings, and budget API route requires a login. API writes also require the CSRF token supplied by the page.
 - Passwords are hashed with Werkzeug. Session cookies are HTTP-only and use `SameSite=Lax`.
-- Before deploying, configure a long, random `SECRET_KEY` in the process environment. When HTTPS is enabled at Nginx, also set `SESSION_COOKIE_SECURE=true`. Do not commit the key to source control.
+- Before deploying, configure a long, random `SECRET_KEY` through the EC2/Gunicorn service environment or a secrets manager. Use the same key for every Gunicorn worker, EC2 instance, and restart; do not commit it to source control. When HTTPS is enabled at Nginx, also set `SESSION_COOKIE_SECURE=true`.
+- The “Remember me” option keeps the session cookie for 30 days; otherwise it lasts for the browser session. Refreshing or navigating between pages does not invalidate either session.
 - Password reset email is not configured; the “Forgot password?” page directs users to the site administrator.
 
 Initialization adds the `users` table and a nullable `transactions.user_id` column/index. Existing transactions are preserved with no owner and are deliberately hidden from every account; they are not automatically assigned. If pre-existing records should belong to a user, review and assign them explicitly as a separate, backed-up data migration.

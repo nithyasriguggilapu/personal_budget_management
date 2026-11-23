@@ -3,8 +3,10 @@
 import os
 import re
 import secrets
-from pathlib import Path
+import tempfile
+from datetime import timedelta
 from functools import wraps
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from flask import (
@@ -26,6 +28,34 @@ import database
 
 
 csrf = CSRFProtect()
+
+
+def _load_secret_key(key_path):
+    key_path = Path(key_path)
+    try:
+        secret_key = key_path.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        key_path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_path = tempfile.mkstemp(
+            prefix=".secret-key-", dir=key_path.parent
+        )
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as secret_file:
+                secret_file.write(secrets.token_hex(32))
+            try:
+                os.link(temporary_path, key_path)
+            except FileExistsError:
+                pass
+        finally:
+            os.unlink(temporary_path)
+        secret_key = key_path.read_text(encoding="utf-8").strip()
+
+    if not secret_key:
+        raise RuntimeError(
+            "The local Flask secret key file is empty. Set the SECRET_KEY "
+            "environment variable or replace the file."
+        )
+    return secret_key
 
 
 def _login_required(view):
@@ -77,14 +107,19 @@ def _valid_password(value):
 
 def create_app(test_config=None):
     app = Flask(__name__)
+    secret_key = (
+        os.environ.get("SECRET_KEY")
+        or (test_config or {}).get("SECRET_KEY")
+        or _load_secret_key(Path(app.instance_path) / ".secret_key")
+    )
     app.config.from_mapping(
         DATABASE=str(Path(__file__).resolve().parent / "instance" / "budget.db"),
-        SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
+        SECRET_KEY=secret_key,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "").lower()
         in {"1", "true", "yes"},
-        PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 30,
+        PERMANENT_SESSION_LIFETIME=timedelta(days=30),
     )
     if test_config:
         app.config.update(test_config)

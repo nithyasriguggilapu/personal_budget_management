@@ -64,13 +64,14 @@ def _transaction_date(value):
         raise BudgetValidationError("Enter a valid date.") from None
 
 
-def add_income(data, database_path=None):
+def add_income(data, user_id, database_path=None):
     if not isinstance(data, dict):
         raise BudgetValidationError("Request data must be an object.")
     source = _required_text(data.get("source"), "Income source", 80)
     amount_cents = _amount_in_cents(data.get("amount"))
     transaction_date = _transaction_date(data.get("date"))
     return database.insert_transaction(
+        user_id,
         "income",
         amount_cents,
         source,
@@ -80,7 +81,7 @@ def add_income(data, database_path=None):
     )
 
 
-def add_expense(data, database_path=None):
+def add_expense(data, user_id, database_path=None):
     if not isinstance(data, dict):
         raise BudgetValidationError("Request data must be an object.")
     category = _required_text(data.get("category"), "Category", 40)
@@ -90,6 +91,7 @@ def add_expense(data, database_path=None):
     amount_cents = _amount_in_cents(data.get("amount"))
     transaction_date = _transaction_date(data.get("date"))
     return database.insert_transaction(
+        user_id,
         "expense",
         amount_cents,
         category,
@@ -114,8 +116,8 @@ def serialize_transaction(row):
     }
 
 
-def get_summary(database_path=None):
-    totals = database.fetch_totals(database_path)
+def get_summary(user_id, database_path=None):
+    totals = database.fetch_totals(user_id, database_path)
     income = totals["income_cents"]
     expenses = totals["expense_cents"]
     return {
@@ -126,16 +128,17 @@ def get_summary(database_path=None):
     }
 
 
-def get_category_summary(database_path=None):
+def get_category_summary(user_id, database_path=None):
     return [
         {"category": row["category"], "amount": _amount(row["amount_cents"])}
-        for row in database.fetch_expense_categories(database_path)
+        for row in database.fetch_expense_categories(user_id, database_path)
     ]
 
 
-def get_monthly_summary(database_path=None, months=6):
+def get_monthly_summary(user_id, database_path=None, months=6):
     rows = {
-        row["month"]: row for row in database.fetch_monthly_totals(database_path, months)
+        row["month"]: row
+        for row in database.fetch_monthly_totals(user_id, database_path, months)
     }
     today = date.today()
     result = []

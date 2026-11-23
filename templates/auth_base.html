@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Account{% endblock %} · Personal Budget Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script defer src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-story">
+      <a class="auth-brand" href="{{ url_for('login') }}">
+        <span class="brand-mark">p</span>
+        <span>Personal Budget</span>
+      </a>
+      <div class="auth-story-copy">
+        <p class="eyebrow auth-eyebrow">PERSONAL BUDGET MANAGEMENT SYSTEM</p>
+        <h1>Make every money decision with confidence.</h1>
+        <p>A clear, private view of your income and spending helps you build better habits, one step at a time.</p>
+      </div>
+      <p class="auth-story-foot">Your finances, organized around you.</p>
+    </section>
+    <section class="auth-panel">
+      <div class="auth-card">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="auth-flashes">
+              {% for category, message in messages %}
+                <p class="flash-message flash-{{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}">{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+        {% block auth_content %}{% endblock %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

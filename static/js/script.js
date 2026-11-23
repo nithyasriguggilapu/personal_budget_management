@@ -32,7 +32,11 @@
   };
   const api = async (url, options = {}) => {
     const response = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...options.headers },
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": document.querySelector('meta[name="csrf-token"]')?.content || "",
+        ...options.headers,
+      },
       ...options,
     });
     const result = await response.json().catch(() => ({}));

@@ -1,0 +1,33 @@
+{% extends "auth_base.html" %}
+{% block title %}Create account{% endblock %}
+{% block auth_content %}
+<h2>Create your account</h2>
+<p class="auth-card-intro">Start building a clearer picture of your finances.</p>
+<form class="auth-form" method="post" action="{{ url_for('register_post') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="full-name">Full name
+    <input id="full-name" name="full_name" type="text" value="{{ request.form.get('full_name', '') }}" autocomplete="name" maxlength="100" required>
+  </label>
+  <label for="email">Email address
+    <input id="email" name="email" type="email" value="{{ request.form.get('email', '') }}" autocomplete="email" maxlength="254" required>
+  </label>
+  <label for="username">Username
+    <input id="username" name="username" type="text" value="{{ request.form.get('username', '') }}" autocomplete="username" minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]{3,30}" required>
+  </label>
+  <label for="new-password">Password
+    <span class="auth-password">
+      <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      <button class="password-toggle" type="button" data-toggle-password="new-password" aria-label="Show password" aria-pressed="false">Show</button>
+    </span>
+  </label>
+  <label for="confirm-password">Confirm password
+    <span class="auth-password">
+      <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      <button class="password-toggle" type="button" data-toggle-password="confirm-password" aria-label="Show password" aria-pressed="false">Show</button>
+    </span>
+  </label>
+  <p class="auth-security-note"><span aria-hidden="true">●</span> Use 12–128 characters with uppercase and lowercase letters, a number, and a symbol.</p>
+  <button class="button button-primary auth-submit" type="submit">Create account</button>
+</form>
+<p class="auth-switch">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+{% endblock %}
